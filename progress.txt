@@ -1,4 +1,113 @@
 INTRASTAT DEMONSTRATOR — IMPLEMENTATION PROGRESS
 =================================================
+GitHub: https://github.com/vhess-de/intrastat-demonstrator
 
-Epic 1: Project Setup & Infrastructure — IN PROGRESS
+
+═══════════════════════════════════════════════════════════════
+EPIC 1: Project Setup & Infrastructure  ✓ COMPLETED
+═══════════════════════════════════════════════════════════════
+
+US-01 — Docker Compose Stack
+  ✓ docker-compose.yml with 3 services: db, backend, frontend
+  ✓ PostgreSQL 17 with named volume (pgdata) and health check
+  ✓ backend depends_on db (waits for healthy state)
+  ✓ frontend (Nginx) proxies /api/** to backend:8080
+  ✓ Only port 80 exposed to host; backend/db on internal network
+  ✓ .env.example with all configurable variables documented
+
+US-02 — Spring Boot Backend Scaffold
+  ✓ Spring Boot 3.3.5, Java 21
+  ✓ Dependencies: spring-web, spring-data-jpa, validation,
+    flyway-core, flyway-database-postgresql, postgresql,
+    springdoc-openapi 2.6.0, lombok
+  ✓ GET /api/health → {"status":"UP"}
+  ✓ OpenAPI spec at GET /api/v3/api-docs
+  ✓ Swagger UI at /api/swagger-ui.html
+  ✓ CORS configured for localhost dev server
+  ✓ Multi-stage Dockerfile: Maven 3.9 builder → eclipse-temurin:21-jre-alpine
+  ✓ All config read from environment variables
+
+US-03 — Angular Frontend Scaffold
+  ✓ Angular 18.2, standalone components
+  ✓ Angular Material 18 (prebuilt indigo-pink theme + Ford blue #003078 override)
+  ✓ App shell: top toolbar (Ford blue), collapsible sidenav
+  ✓ Navigation items: Transactions (/transactions), Intrastat Report (/report)
+  ✓ Responsive: hamburger menu on mobile via BreakpointObserver
+  ✓ Lazy-loaded route placeholders for Transactions and Report pages
+  ✓ HttpClient configured; environment.ts points to localhost:8080/api (dev)
+  ✓ Multi-stage Dockerfile: node:20-alpine builder → nginx:alpine runtime
+  ✓ Nginx: SPA routing (try_files), /api proxy, gzip, static asset caching
+
+US-04 — Database Schema (V1 Migration)
+  ✓ V1__initial_schema.sql creates:
+      - legal_entities (id, name, country_code, vat_number, active)
+      - eu_countries   (code, name, active_member)
+      - parts          (id, part_code, name, cn8_code, supplementary_unit,
+                        unit_mass_kg, unit_price_eur)
+      - transactions   (id, legal_entity_id, period, flow_type,
+                        counterpart_country_code, part_id, quantity,
+                        net_mass_kg, statistical_value_eur, invoice_value_eur,
+                        nature_of_transaction_code, mode_of_transport,
+                        delivery_terms, created_at, updated_at)
+  ✓ Indexes on all FK and filter columns
+  ✓ Trigger fn_update_updated_at() auto-updates updated_at on PATCH
+
+FILES CREATED (32 total):
+  docker-compose.yml
+  .env.example
+  .gitignore
+  backend/Dockerfile
+  backend/pom.xml
+  backend/src/main/java/com/ford/intrastat/IntrastatApplication.java
+  backend/src/main/java/com/ford/intrastat/controller/HealthController.java
+  backend/src/main/java/com/ford/intrastat/config/OpenApiConfig.java
+  backend/src/main/java/com/ford/intrastat/config/WebConfig.java
+  backend/src/main/resources/application.properties
+  backend/src/main/resources/db/migration/V1__initial_schema.sql
+  backend/src/test/java/com/ford/intrastat/IntrastatApplicationTests.java
+  frontend/Dockerfile
+  frontend/nginx.conf
+  frontend/package.json
+  frontend/angular.json
+  frontend/tsconfig.json
+  frontend/tsconfig.app.json
+  frontend/src/index.html
+  frontend/src/main.ts
+  frontend/src/styles.scss
+  frontend/src/environments/environment.ts
+  frontend/src/environments/environment.prod.ts
+  frontend/src/app/app.config.ts
+  frontend/src/app/app.routes.ts
+  frontend/src/app/app.component.ts
+  frontend/src/app/app.component.html
+  frontend/src/app/app.component.scss
+  frontend/src/app/features/transactions/transactions.component.ts
+  frontend/src/app/features/report/report.component.ts
+  prd.md
+  progress.txt
+
+
+═══════════════════════════════════════════════════════════════
+EPIC 2: Reference Data & Seed Data  — NEXT
+═══════════════════════════════════════════════════════════════
+  ○ V2__seed_reference_data.sql (3 legal entities, 27 EU countries, 20 parts)
+  ○ V3__seed_transactions.sql (60 transactions, Jan–Mar 2025)
+  ○ JPA entity classes (LegalEntity, EuCountry, Part, Transaction)
+  ○ Spring Data repositories for all entities
+
+
+═══════════════════════════════════════════════════════════════
+EPIC 3: Transaction Management API   — PENDING
+═══════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════
+EPIC 4: Intrastat Report API         — PENDING
+═══════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════
+EPIC 5: Angular Frontend — Transaction Table & Edit  — PENDING
+═══════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════
+EPIC 6: Angular Frontend — Intrastat Report View     — PENDING
+═══════════════════════════════════════════════════════════════
