@@ -1,0 +1,52 @@
+<mat-sidenav-container class="sidenav-container">
+
+  <mat-sidenav
+    #drawer
+    class="sidenav"
+    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="(isHandset$ | async) === false">
+
+    <div class="sidenav-header">
+      <span class="sidenav-title">Navigation</span>
+    </div>
+
+    <mat-nav-list>
+      <a mat-list-item
+         routerLink="/transactions"
+         routerLinkActive="active-link"
+         (click)="(isHandset$ | async) && drawer.close()">
+        <mat-icon matListItemIcon>receipt_long</mat-icon>
+        <span matListItemTitle>Transactions</span>
+      </a>
+      <a mat-list-item
+         routerLink="/report"
+         routerLinkActive="active-link"
+         (click)="(isHandset$ | async) && drawer.close()">
+        <mat-icon matListItemIcon>bar_chart</mat-icon>
+        <span matListItemTitle>Intrastat Report</span>
+      </a>
+    </mat-nav-list>
+
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+
+    <mat-toolbar color="primary">
+      @if (isHandset$ | async) {
+        <button mat-icon-button aria-label="Toggle navigation" (click)="drawer.toggle()">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="toolbar-title">Intrastat Demonstrator</span>
+      <span class="toolbar-spacer"></span>
+      <span class="toolbar-subtitle">Ford of Europe</span>
+    </mat-toolbar>
+
+    <main class="main-content">
+      <router-outlet />
+    </main>
+
+  </mat-sidenav-content>
+
+</mat-sidenav-container>

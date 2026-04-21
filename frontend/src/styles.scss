@@ -1,0 +1,66 @@
+// Global styles — Angular Material prebuilt theme is loaded via angular.json
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: #f5f5f5;
+}
+
+// Override primary toolbar to Ford Blue
+.mat-toolbar.mat-primary {
+  background-color: #003078 !important;
+  color: #ffffff !important;
+}
+
+// Sidenav active link highlight
+.active-link {
+  background-color: rgba(0, 48, 120, 0.12) !important;
+  color: #003078 !important;
+  font-weight: 500;
+
+  .mat-icon {
+    color: #003078;
+  }
+}
+
+// Page content padding
+.page-content {
+  padding: 24px;
+}
+
+// Card grid helper
+.card-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 24px;
+}
+
+// ARRIVAL / DISPATCH flow badges
+.badge-arrival {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-dispatch {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+// Table helpers
+.text-right {
+  text-align: right !important;
+}
+
+.text-mono {
+  font-family: 'Roboto Mono', monospace;
+}
