@@ -88,16 +88,86 @@ FILES CREATED (32 total):
 
 
 ═══════════════════════════════════════════════════════════════
-EPIC 2: Reference Data & Seed Data  — NEXT
+EPIC 2: Reference Data & Seed Data  ✓ COMPLETED
 ═══════════════════════════════════════════════════════════════
-  ○ V2__seed_reference_data.sql (3 legal entities, 27 EU countries, 20 parts)
-  ○ V3__seed_transactions.sql (60 transactions, Jan–Mar 2025)
-  ○ JPA entity classes (LegalEntity, EuCountry, Part, Transaction)
-  ○ Spring Data repositories for all entities
+
+US-05 — Reference Data Seed (V2 Migration)
+  ✓ V2__seed_reference_data.sql inserts:
+      - 3 Ford legal entities:
+          Ford Werke GmbH      (DE, VAT: DE812156231)
+          Ford Romania S.A.    (RO, VAT: RO14388255)
+          Ford Nederland B.V.  (NL, VAT: NL004495445B01)
+      - 27 EU member states (AT, BE, BG, CY, CZ, DE, DK, EE, ES, FI,
+          FR, GR, HR, HU, IE, IT, LT, LU, LV, MT, NL, PL, PT, RO, SE, SI, SK)
+      - 20 automotive parts with CN8 codes, unit masses and transfer prices:
+          P-001  Engine Block (2.0L Diesel)        84082020  180 kg  €4,200
+          P-002  Gearbox Assembly (6-speed manual)  87084020   45 kg  €1,800
+          P-003  Brake Disc Set (front axle)        87083010   12 kg  €  180
+          P-004  Front Bumper Assembly              87081010    8 kg  €  320
+          P-005  Alternator 180A                    85115019  4.5 kg  €  240
+          P-006  Lithium-Ion Battery Pack (48V)     85076000   22 kg  €1,200
+          P-007  Radiator (coolant)                 87089120  6.5 kg  €  280
+          P-008  Exhaust System (complete)          87089220   14 kg  €  420
+          P-009  Clutch Kit                         87089310  8.5 kg  €  360
+          P-010  Front Shock Absorber (pair)        87088020   11 kg  €  290
+          P-011  Drive Shaft (rear)                 84831095    9 kg  €  340
+          P-012  Seat Belt Assembly                 87082110  1.8 kg  €   95
+          P-013  Wiring Harness (engine bay)        85443090  5.5 kg  €  185
+          P-014  Steering Column Assembly           87089435    7 kg  €  520
+          P-015  Fuel Pump (high pressure)          84133020  1.2 kg  €  165
+          P-016  Dashboard Trim Panel               87082991  4.2 kg  €  145
+          P-017  Alloy Wheel Rim 17"                87087010  9.5 kg  €  210
+          P-018  Airbag Module (driver)             87082910  1.5 kg  €  380
+          P-019  Power Steering Unit (electric)     87089410  5.8 kg  €  680
+          P-020  Catalytic Converter                85433000  4.8 kg  €  490
+
+US-06 — Transaction Seed Data (V3 Migration)
+  ✓ V3__seed_transactions.sql inserts 60 transactions via PL/pgSQL DO block
+    (IDs resolved by name/part_code — no hard-coded sequence IDs)
+  ✓ 20 transactions per period: Jan 2025, Feb 2025, Mar 2025
+  ✓ Per period: 13 DISPATCH + 7 ARRIVAL
+  ✓ Legal entity distribution per period:
+      Ford Werke GmbH (DE): 8 txns  (→/← FR, PL, BE, IT, ES, HU, CZ, AT)
+      Ford Romania S.A. (RO): 7 txns (→/← DE, FR, HU, PL, BE, AT, CZ, SK)
+      Ford Nederland B.V. (NL): 5 txns (→/← SE, SK, DE, IT, PL)
+  ✓ All 20 parts appear in every period
+  ✓ NOTc=21 (returns): txn #13 (Jan), #27 (Feb), #53 (Mar) — 3 total
+  ✓ Mode 4 (air freight): txn #4, #19 (Jan), #26, #36 (Feb), #46, #54 (Mar) — 6 total
+  ✓ Mode 1 (sea): txn #16 (Jan), #35 (Feb), #55 (Mar) — 3 total
+  ✓ Counterpart countries covered: DE, FR, PL, BE, IT, ES, HU, CZ, AT, SE, SK
+
+JPA Entities (package: com.ford.intrastat.model)
+  ✓ FlowType.java          — enum: ARRIVAL, DISPATCH
+  ✓ LegalEntity.java       — @Entity mapped to legal_entities
+  ✓ EuCountry.java         — @Entity mapped to eu_countries (String PK)
+  ✓ Part.java              — @Entity mapped to parts
+  ✓ Transaction.java       — @Entity mapped to transactions; @ManyToOne to
+                              LegalEntity, EuCountry, Part; @PrePersist/@PreUpdate
+                              hooks for created_at/updated_at
+
+Spring Data Repositories (package: com.ford.intrastat.repository)
+  ✓ LegalEntityRepository  — findByActiveTrueOrderByName()
+  ✓ EuCountryRepository    — findByActiveMemberTrueOrderByName()
+  ✓ PartRepository         — findAllByOrderByPartCode()
+  ✓ TransactionRepository  — JpaSpecificationExecutor (for dynamic filtering);
+                              findDistinctPeriods() native query
+
+FILES CREATED (11 total):
+  backend/src/main/resources/db/migration/V2__seed_reference_data.sql
+  backend/src/main/resources/db/migration/V3__seed_transactions.sql
+  backend/src/main/java/com/ford/intrastat/model/FlowType.java
+  backend/src/main/java/com/ford/intrastat/model/LegalEntity.java
+  backend/src/main/java/com/ford/intrastat/model/EuCountry.java
+  backend/src/main/java/com/ford/intrastat/model/Part.java
+  backend/src/main/java/com/ford/intrastat/model/Transaction.java
+  backend/src/main/java/com/ford/intrastat/repository/LegalEntityRepository.java
+  backend/src/main/java/com/ford/intrastat/repository/EuCountryRepository.java
+  backend/src/main/java/com/ford/intrastat/repository/PartRepository.java
+  backend/src/main/java/com/ford/intrastat/repository/TransactionRepository.java
 
 
 ═══════════════════════════════════════════════════════════════
-EPIC 3: Transaction Management API   — PENDING
+EPIC 3: Transaction Management API   — NEXT
 ═══════════════════════════════════════════════════════════════
 
 ═══════════════════════════════════════════════════════════════
