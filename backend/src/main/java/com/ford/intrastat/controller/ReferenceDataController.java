@@ -20,19 +20,19 @@ public class ReferenceDataController {
 
     private final ReferenceDataService referenceDataService;
 
-    @GetMapping("/api/legal-entities")
+    @GetMapping("/legal-entities")
     @Operation(summary = "List all active legal entities")
     public ResponseEntity<List<LegalEntityDto>> getLegalEntities() {
         return ResponseEntity.ok(referenceDataService.getLegalEntities());
     }
 
-    @GetMapping("/api/countries")
+    @GetMapping("/countries")
     @Operation(summary = "List all active EU member states, sorted by name")
     public ResponseEntity<List<CountryDto>> getCountries() {
         return ResponseEntity.ok(referenceDataService.getCountries());
     }
 
-    @GetMapping("/api/parts")
+    @GetMapping("/parts")
     @Operation(summary = "List all parts sorted by part code")
     public ResponseEntity<List<PartDto>> getParts() {
         return ResponseEntity.ok(referenceDataService.getParts());
