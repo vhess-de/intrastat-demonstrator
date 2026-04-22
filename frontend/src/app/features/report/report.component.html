@@ -1,0 +1,282 @@
+<!-- ── Initial loading (periods / entities) ──────────────────────────────── -->
+@if (initialLoading) {
+  <div class="center-spinner">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+} @else {
+
+<!-- ── Filter controls ───────────────────────────────────────────────────── -->
+<mat-card class="filter-card">
+  <mat-card-content>
+    <div class="filter-row">
+
+      <mat-form-field appearance="outline" class="filter-field period-field">
+        <mat-label>Reporting Period</mat-label>
+        <mat-select [(ngModel)]="selectedPeriod" (ngModelChange)="loadReport()">
+          @for (p of periods; track p) {
+            <mat-option [value]="p">{{ p }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Legal Entity</mat-label>
+        <mat-select [(ngModel)]="selectedEntityId" (ngModelChange)="loadReport()">
+          <mat-option [value]="null">All entities</mat-option>
+          @for (e of legalEntities; track e.id) {
+            <mat-option [value]="e.id">{{ e.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-button-toggle-group
+        [(ngModel)]="selectedFlow"
+        (ngModelChange)="loadReport()"
+        class="flow-toggle">
+        <mat-button-toggle value="ALL">All</mat-button-toggle>
+        <mat-button-toggle value="ARRIVAL">Arrivals</mat-button-toggle>
+        <mat-button-toggle value="DISPATCH">Dispatches</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      @if (selectedEntityId != null || selectedFlow !== 'ALL') {
+        <button mat-stroked-button (click)="clearFilters()">
+          <mat-icon>filter_alt_off</mat-icon> Clear Filters
+        </button>
+      }
+
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<!-- ── Summary cards ─────────────────────────────────────────────────────── -->
+@if (report) {
+  <div class="card-grid summary-grid">
+
+    <mat-card class="summary-card">
+      <mat-card-header><mat-card-title>Total Report Lines</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <span class="card-value">{{ report.summary.totalLines }}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header><mat-card-title>Total Statistical Value</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <span class="card-value">€&nbsp;{{ report.summary.totalStatisticalValueEur | number:'1.2-2' }}</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header><mat-card-title>Total Net Mass</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <span class="card-value">{{ report.summary.totalNetMassKg | number:'1.2-2' }} kg</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-header><mat-card-title>Total Quantity</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <span class="card-value">{{ report.summary.totalQuantity | number }} units</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card arrival-card">
+      <mat-card-header><mat-card-title>Arrivals Value</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <span class="card-value">€&nbsp;{{ report.summary.arrivalValueEur | number:'1.2-2' }}</span>
+        <span class="card-sub">{{ report.summary.arrivalLines }} lines</span>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card dispatch-card">
+      <mat-card-header><mat-card-title>Dispatches Value</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <span class="card-value">€&nbsp;{{ report.summary.dispatchValueEur | number:'1.2-2' }}</span>
+        <span class="card-sub">{{ report.summary.dispatchLines }} lines</span>
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+}
+
+<!-- ── No-data state ─────────────────────────────────────────────────────── -->
+@if (!loading && report && report.lines.length === 0) {
+  <div class="no-data-state">
+    <mat-icon class="no-data-icon">search_off</mat-icon>
+    <p class="no-data-text">No transactions found for the selected filters.</p>
+    <button mat-stroked-button (click)="clearFilters()">Clear Filters</button>
+  </div>
+}
+
+<!-- ── Report table ──────────────────────────────────────────────────────── -->
+@if (loading || (report && report.lines.length > 0)) {
+  <div class="table-scroll">
+    <mat-table [dataSource]="tableRows" class="report-table">
+
+      <!-- Legal Entity -->
+      <ng-container matColumnDef="legalEntity">
+        <mat-header-cell *matHeaderCellDef>Legal Entity</mat-header-cell>
+        <mat-cell *matCellDef="let row">
+          {{ $any(row).legalEntityName }} ({{ $any(row).legalEntityCountry }})
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef class="footer-label">Grand Total</mat-footer-cell>
+      </ng-container>
+
+      <!-- Flow -->
+      <ng-container matColumnDef="flow">
+        <mat-header-cell *matHeaderCellDef>Flow</mat-header-cell>
+        <mat-cell *matCellDef="let row">
+          <span [class]="$any(row).flowType === 'ARRIVAL' ? 'badge-arrival' : 'badge-dispatch'">
+            {{ $any(row).flowType }}
+          </span>
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- Counterpart Country -->
+      <ng-container matColumnDef="counterpartCountry">
+        <mat-header-cell *matHeaderCellDef>Counterpart</mat-header-cell>
+        <mat-cell *matCellDef="let row">
+          {{ countryFlag($any(row).counterpartCountryCode) }}
+          {{ $any(row).counterpartCountryName }}
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- CN8 Code -->
+      <ng-container matColumnDef="cn8Code">
+        <mat-header-cell *matHeaderCellDef>CN8 Code</mat-header-cell>
+        <mat-cell *matCellDef="let row" class="text-mono">{{ $any(row).cn8Code }}</mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- Part Name -->
+      <ng-container matColumnDef="partName">
+        <mat-header-cell *matHeaderCellDef>Part Description</mat-header-cell>
+        <mat-cell *matCellDef="let row">{{ $any(row).partName }}</mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- Qty -->
+      <ng-container matColumnDef="qty">
+        <mat-header-cell *matHeaderCellDef class="col-num">Qty</mat-header-cell>
+        <mat-cell *matCellDef="let row" class="col-num">
+          {{ $any(row).totalQuantity | number }}
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef class="col-num footer-bold">
+          {{ footerQty | number }}
+        </mat-footer-cell>
+      </ng-container>
+
+      <!-- Net Mass -->
+      <ng-container matColumnDef="netMass">
+        <mat-header-cell *matHeaderCellDef class="col-num">Net Mass (kg)</mat-header-cell>
+        <mat-cell *matCellDef="let row" class="col-num">
+          {{ $any(row).totalNetMassKg | number:'1.2-2' }}
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef class="col-num footer-bold">
+          {{ footerNetMass | number:'1.2-2' }}
+        </mat-footer-cell>
+      </ng-container>
+
+      <!-- Stat Value -->
+      <ng-container matColumnDef="statValue">
+        <mat-header-cell *matHeaderCellDef class="col-num">Stat. Value (€)</mat-header-cell>
+        <mat-cell *matCellDef="let row" class="col-num">
+          {{ $any(row).totalStatisticalValueEur | number:'1.2-2' }}
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef class="col-num footer-bold">
+          {{ footerStatValue | number:'1.2-2' }}
+        </mat-footer-cell>
+      </ng-container>
+
+      <!-- Invoice Value -->
+      <ng-container matColumnDef="invValue">
+        <mat-header-cell *matHeaderCellDef class="col-num">Invoice Value (€)</mat-header-cell>
+        <mat-cell *matCellDef="let row" class="col-num">
+          {{ $any(row).totalInvoiceValueEur | number:'1.2-2' }}
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef class="col-num footer-bold">
+          {{ footerInvValue | number:'1.2-2' }}
+        </mat-footer-cell>
+      </ng-container>
+
+      <!-- Transport -->
+      <ng-container matColumnDef="transport">
+        <mat-header-cell *matHeaderCellDef>Transport</mat-header-cell>
+        <mat-cell *matCellDef="let row">{{ $any(row).modeOfTransportLabel }}</mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- NOTc -->
+      <ng-container matColumnDef="notc">
+        <mat-header-cell *matHeaderCellDef>NOTc</mat-header-cell>
+        <mat-cell *matCellDef="let row">{{ $any(row).natureOfTransactionCode }}</mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- Terms -->
+      <ng-container matColumnDef="terms">
+        <mat-header-cell *matHeaderCellDef>Terms</mat-header-cell>
+        <mat-cell *matCellDef="let row">{{ $any(row).deliveryTerms }}</mat-cell>
+        <mat-footer-cell *matFooterCellDef></mat-footer-cell>
+      </ng-container>
+
+      <!-- Txn Count -->
+      <ng-container matColumnDef="txnCount">
+        <mat-header-cell *matHeaderCellDef class="col-num">Txn Count</mat-header-cell>
+        <mat-cell *matCellDef="let row" class="col-num">
+          <span
+            [matTooltip]="'Based on ' + $any(row).transactionCount + ' raw transactions'"
+            matTooltipShowDelay="200">
+            {{ $any(row).transactionCount }}
+          </span>
+        </mat-cell>
+        <mat-footer-cell *matFooterCellDef class="col-num footer-bold">
+          {{ footerTxnCount }}
+        </mat-footer-cell>
+      </ng-container>
+
+      <!-- ── Group header virtual column (spans full row width) ────────── -->
+      <ng-container matColumnDef="groupRow">
+        <mat-cell *matCellDef="let row" class="group-header-cell">
+          @if ($any(row).rowType === 'GROUP_HEADER') {
+            <mat-icon class="group-icon">
+              {{ $any(row).flowType === 'ARRIVAL' ? 'arrow_downward' : 'arrow_upward' }}
+            </mat-icon>
+            <span class="group-label">{{ groupLabel($any(row)) }}</span>
+            <span class="group-meta">
+              {{ $any(row).lineCount }} lines ·
+              {{ $any(row).subtotalTxnCount }} transactions ·
+              € {{ $any(row).subtotalStatValueEur | number:'1.0-0' }}
+            </span>
+          }
+        </mat-cell>
+      </ng-container>
+
+      <!-- ── Skeleton virtual column ───────────────────────────────────── -->
+      <ng-container matColumnDef="skeletonRow">
+        <mat-cell *matCellDef="let row" class="skeleton-cell">
+          <div class="skeleton-bar"></div>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Row definitions -->
+      <mat-header-row *matHeaderRowDef="dataColumns; sticky: true"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: dataColumns; when: isDataRow"
+               [class.row-even]="true"></mat-row>
+      <mat-row *matRowDef="let row; columns: ['groupRow']; when: isGroupHeader"
+               [class.group-header-row]="true"
+               [class.group-arrival]="$any(row).flowType === 'ARRIVAL'"
+               [class.group-dispatch]="$any(row).flowType === 'DISPATCH'"></mat-row>
+      <mat-row *matRowDef="let row; columns: ['skeletonRow']; when: isSkeleton"
+               class="skeleton-row"></mat-row>
+      <mat-footer-row *matFooterRowDef="dataColumns"
+                      [style.display]="showFooter ? '' : 'none'"
+                      class="footer-row"></mat-footer-row>
+
+    </mat-table>
+  </div>
+}
+
+} <!-- end @else initialLoading -->
