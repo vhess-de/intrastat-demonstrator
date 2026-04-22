@@ -1,9 +1,7 @@
-import { Component } from '@angular/core';
-import { AsyncPipe } from '@angular/common';
+import { Component, OnDestroy } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Observable } from 'rxjs';
-import { map, shareReplay } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -14,7 +12,6 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-root',
   standalone: true,
   imports: [
-    AsyncPipe,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -27,13 +24,17 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
-  isHandset$: Observable<boolean> = this.breakpointObserver
-    .observe(Breakpoints.Handset)
-    .pipe(
-      map(result => result.matches),
-      shareReplay()
-    );
+export class AppComponent implements OnDestroy {
+  isHandset = false;
+  private breakpointSub: Subscription;
 
-  constructor(private breakpointObserver: BreakpointObserver) {}
+  constructor(private breakpointObserver: BreakpointObserver) {
+    this.breakpointSub = this.breakpointObserver
+      .observe(Breakpoints.Handset)
+      .subscribe(result => this.isHandset = result.matches);
+  }
+
+  ngOnDestroy(): void {
+    this.breakpointSub.unsubscribe();
+  }
 }

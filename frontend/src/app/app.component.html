@@ -3,9 +3,9 @@
   <mat-sidenav
     #drawer
     class="sidenav"
-    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-    [mode]="(isHandset$ | async) ? 'over' : 'side'"
-    [opened]="(isHandset$ | async) === false">
+    [attr.role]="isHandset ? 'dialog' : 'navigation'"
+    [mode]="isHandset ? 'over' : 'side'"
+    [opened]="!isHandset">
 
     <div class="sidenav-header">
       <span class="sidenav-title">Navigation</span>
@@ -15,14 +15,14 @@
       <a mat-list-item
          routerLink="/transactions"
          routerLinkActive="active-link"
-         (click)="(isHandset$ | async) && drawer.close()">
+         (click)="isHandset && drawer.close()">
         <mat-icon matListItemIcon>receipt_long</mat-icon>
         <span matListItemTitle>Transactions</span>
       </a>
       <a mat-list-item
          routerLink="/report"
          routerLinkActive="active-link"
-         (click)="(isHandset$ | async) && drawer.close()">
+         (click)="isHandset && drawer.close()">
         <mat-icon matListItemIcon>bar_chart</mat-icon>
         <span matListItemTitle>Intrastat Report</span>
       </a>
@@ -33,7 +33,7 @@
   <mat-sidenav-content>
 
     <mat-toolbar color="primary">
-      @if (isHandset$ | async) {
+      @if (isHandset) {
         <button mat-icon-button aria-label="Toggle navigation" (click)="drawer.toggle()">
           <mat-icon>menu</mat-icon>
         </button>
