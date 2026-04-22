@@ -58,11 +58,11 @@ public class Transaction {
     private BigDecimal invoiceValueEur;
 
     /** Nature of transaction code (NOTc): 11 = outright purchase/sale, 21 = return */
-    @Column(name = "nature_of_transaction_code", nullable = false)
+    @Column(name = "nature_of_transaction_code", nullable = false, columnDefinition = "int2")
     private Integer natureOfTransactionCode;
 
     /** Mode of transport: 1=Sea, 3=Road, 4=Air, 5=Post, 7=Fixed, 9=Own propulsion */
-    @Column(name = "mode_of_transport", nullable = false)
+    @Column(name = "mode_of_transport", nullable = false, columnDefinition = "int2")
     private Integer modeOfTransport;
 
     /** Incoterms delivery terms (e.g. DAP, FCA, EXW, DDP) */
