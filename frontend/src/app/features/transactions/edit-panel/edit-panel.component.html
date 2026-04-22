@@ -1,0 +1,166 @@
+<div class="panel-header">
+  <h3 class="panel-title">Edit Transaction #{{ transaction.id }}</h3>
+  <button mat-icon-button (click)="cancel()" matTooltip="Cancel" [disabled]="saving">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<div class="panel-body">
+
+  <!-- Read-only context ──────────────────────────────────────────────────── -->
+  <section class="readonly-section">
+    <div class="ro-row">
+      <span class="ro-label">Period</span>
+      <span>{{ transaction.period }}</span>
+    </div>
+    <div class="ro-row">
+      <span class="ro-label">Legal Entity</span>
+      <span>{{ transaction.legalEntity.name }} ({{ transaction.legalEntity.countryCode }})</span>
+    </div>
+    <div class="ro-row">
+      <span class="ro-label">Flow Type</span>
+      <span [class]="transaction.flowType === 'ARRIVAL' ? 'badge-arrival' : 'badge-dispatch'">
+        {{ transaction.flowType }}
+      </span>
+    </div>
+    <div class="ro-row">
+      <span class="ro-label">Part</span>
+      <span>{{ transaction.part.partCode }} – {{ transaction.part.name }}</span>
+    </div>
+    <div class="ro-row">
+      <span class="ro-label">CN8 Code</span>
+      <span class="text-mono">{{ transaction.part.cn8Code }}</span>
+    </div>
+  </section>
+
+  <mat-divider></mat-divider>
+
+  <!-- Editable form ─────────────────────────────────────────────────────── -->
+  <form [formGroup]="form" class="edit-form" novalidate>
+
+    <!-- Quantity -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Quantity</mat-label>
+      <input matInput type="number" min="1" formControlName="quantity">
+      <mat-error>
+        @if (form.get('quantity')?.hasError('required')) { Required }
+        @else if (form.get('quantity')?.hasError('min')) { Must be greater than 0 }
+        @else if (form.get('quantity')?.hasError('serverError')) {
+          {{ getError('quantity', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+    <p class="estimated-mass">
+      Estimated net mass:
+      <strong>{{ estimatedNetMass | number:'1.2-2' }} kg</strong>
+    </p>
+
+    <!-- Statistical Value -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Statistical Value (€)</mat-label>
+      <input matInput type="number" step="0.01" min="0.01" formControlName="statisticalValueEur">
+      <mat-error>
+        @if (form.get('statisticalValueEur')?.hasError('required')) { Required }
+        @else if (form.get('statisticalValueEur')?.hasError('min')) { Must be greater than 0 }
+        @else if (form.get('statisticalValueEur')?.hasError('serverError')) {
+          {{ getError('statisticalValueEur', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Invoice Value -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Invoice Value (€)</mat-label>
+      <input matInput type="number" step="0.01" min="0.01" formControlName="invoiceValueEur">
+      <mat-error>
+        @if (form.get('invoiceValueEur')?.hasError('required')) { Required }
+        @else if (form.get('invoiceValueEur')?.hasError('min')) { Must be greater than 0 }
+        @else if (form.get('invoiceValueEur')?.hasError('serverError')) {
+          {{ getError('invoiceValueEur', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Counterpart Country -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Counterpart Country</mat-label>
+      <mat-select formControlName="counterpartCountryCode">
+        @for (c of countries; track c.code) {
+          <mat-option [value]="c.code">{{ c.name }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>
+        @if (form.get('counterpartCountryCode')?.hasError('required')) { Required }
+        @else if (form.get('counterpartCountryCode')?.hasError('serverError')) {
+          {{ getError('counterpartCountryCode', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Mode of Transport -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Mode of Transport</mat-label>
+      <mat-select formControlName="modeOfTransport">
+        @for (opt of transportOptions; track opt.value) {
+          <mat-option [value]="opt.value">{{ opt.value }} – {{ opt.label }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>
+        @if (form.get('modeOfTransport')?.hasError('required')) { Required }
+        @else if (form.get('modeOfTransport')?.hasError('serverError')) {
+          {{ getError('modeOfTransport', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Nature of Transaction Code -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nature of Transaction Code</mat-label>
+      <input matInput type="number" min="11" max="99" formControlName="natureOfTransactionCode">
+      <mat-hint>Valid range: 11–99</mat-hint>
+      <mat-error>
+        @if (form.get('natureOfTransactionCode')?.hasError('required')) { Required }
+        @else if (
+          form.get('natureOfTransactionCode')?.hasError('min') ||
+          form.get('natureOfTransactionCode')?.hasError('max')
+        ) { Must be between 11 and 99 }
+        @else if (form.get('natureOfTransactionCode')?.hasError('serverError')) {
+          {{ getError('natureOfTransactionCode', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Delivery Terms -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Delivery Terms</mat-label>
+      <mat-select formControlName="deliveryTerms">
+        @for (term of deliveryTerms; track term) {
+          <mat-option [value]="term">{{ term }}</mat-option>
+        }
+      </mat-select>
+      <mat-error>
+        @if (form.get('deliveryTerms')?.hasError('required')) { Required }
+        @else if (form.get('deliveryTerms')?.hasError('serverError')) {
+          {{ getError('deliveryTerms', 'serverError') }}
+        }
+      </mat-error>
+    </mat-form-field>
+
+  </form>
+</div>
+
+<!-- Footer actions ─────────────────────────────────────────────────────────── -->
+<div class="panel-footer">
+  <button mat-button (click)="cancel()" [disabled]="saving">Cancel</button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="save()"
+    [disabled]="saving">
+    @if (saving) {
+      <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
+    } @else {
+      Save
+    }
+  </button>
+</div>

@@ -1,0 +1,211 @@
+<mat-sidenav-container class="page-sidenav-container">
+
+  <!-- ── Main content ───────────────────────────────────────────────────── -->
+  <mat-sidenav-content>
+
+    <!-- Filter bar -->
+    <mat-card class="filter-card">
+      <mat-card-content>
+        <div class="filter-row">
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Period</mat-label>
+            <mat-select [(ngModel)]="filterPeriod" (ngModelChange)="applyFilters()">
+              <mat-option value="">All periods</mat-option>
+              @for (p of periods; track p) {
+                <mat-option [value]="p">{{ p }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-button-toggle-group
+            [(ngModel)]="filterFlow"
+            (ngModelChange)="applyFilters()"
+            class="flow-toggle">
+            <mat-button-toggle value="ALL">All</mat-button-toggle>
+            <mat-button-toggle value="ARRIVAL">Arrivals</mat-button-toggle>
+            <mat-button-toggle value="DISPATCH">Dispatches</mat-button-toggle>
+          </mat-button-toggle-group>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Legal Entity</mat-label>
+            <mat-select [(ngModel)]="filterEntityId" (ngModelChange)="applyFilters()">
+              <mat-option [value]="null">All entities</mat-option>
+              @for (e of legalEntities; track e.id) {
+                <mat-option [value]="e.id">{{ e.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filter-field">
+            <mat-label>Counterpart Country</mat-label>
+            <mat-select [(ngModel)]="filterCountry" (ngModelChange)="applyFilters()">
+              <mat-option value="">All countries</mat-option>
+              @for (c of distinctCountries; track c.code) {
+                <mat-option [value]="c.code">{{ countryFlag(c.code) }} {{ c.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <button
+            mat-stroked-button
+            (click)="clearFilters()"
+            [matBadge]="activeFilterCount"
+            [matBadgeHidden]="activeFilterCount === 0"
+            matBadgeColor="accent"
+            matBadgeSize="small">
+            Clear Filters
+          </button>
+
+        </div>
+
+        <p class="count-label">
+          Showing <strong>{{ filteredCount }}</strong> of
+          <strong>{{ allTransactions.length }}</strong> transactions
+        </p>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Table wrapper — always in DOM so ViewChild finds paginator/sort -->
+    <div class="table-wrapper" [class.is-loading]="loading">
+
+      @if (loading) {
+        <div class="loading-overlay">
+          <mat-spinner diameter="48"></mat-spinner>
+        </div>
+      }
+
+      <div class="table-scroll">
+        <mat-table [dataSource]="dataSource" matSort class="transactions-table">
+
+          <!-- Period -->
+          <ng-container matColumnDef="period">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Period</mat-header-cell>
+            <mat-cell *matCellDef="let row">{{ row.period }}</mat-cell>
+          </ng-container>
+
+          <!-- Legal Entity -->
+          <ng-container matColumnDef="legalEntity">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Legal Entity</mat-header-cell>
+            <mat-cell *matCellDef="let row">
+              {{ countryFlag(row.legalEntity.countryCode) }} {{ row.legalEntity.name }}
+            </mat-cell>
+          </ng-container>
+
+          <!-- Flow -->
+          <ng-container matColumnDef="flow">
+            <mat-header-cell *matHeaderCellDef>Flow</mat-header-cell>
+            <mat-cell *matCellDef="let row">
+              <span [class]="row.flowType === 'ARRIVAL' ? 'badge-arrival' : 'badge-dispatch'">
+                {{ row.flowType }}
+              </span>
+            </mat-cell>
+          </ng-container>
+
+          <!-- Counterpart Country -->
+          <ng-container matColumnDef="counterpartCountry">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Counterpart</mat-header-cell>
+            <mat-cell *matCellDef="let row">
+              {{ countryFlag(row.counterpartCountryCode) }} {{ row.counterpartCountryName }}
+            </mat-cell>
+          </ng-container>
+
+          <!-- Part -->
+          <ng-container matColumnDef="part">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Part</mat-header-cell>
+            <mat-cell *matCellDef="let row">
+              <span class="part-code text-mono">{{ row.part.partCode }}</span>
+              &nbsp;{{ row.part.name }}
+            </mat-cell>
+          </ng-container>
+
+          <!-- CN8 Code -->
+          <ng-container matColumnDef="cn8Code">
+            <mat-header-cell *matHeaderCellDef>CN8 Code</mat-header-cell>
+            <mat-cell *matCellDef="let row" class="text-mono">{{ row.part.cn8Code }}</mat-cell>
+          </ng-container>
+
+          <!-- Quantity -->
+          <ng-container matColumnDef="quantity">
+            <mat-header-cell *matHeaderCellDef mat-sort-header class="col-num">Qty</mat-header-cell>
+            <mat-cell *matCellDef="let row" class="col-num">{{ row.quantity | number }}</mat-cell>
+          </ng-container>
+
+          <!-- Net Mass -->
+          <ng-container matColumnDef="netMassKg">
+            <mat-header-cell *matHeaderCellDef mat-sort-header class="col-num">Net Mass (kg)</mat-header-cell>
+            <mat-cell *matCellDef="let row" class="col-num">{{ row.netMassKg | number:'1.2-2' }}</mat-cell>
+          </ng-container>
+
+          <!-- Statistical Value -->
+          <ng-container matColumnDef="statisticalValueEur">
+            <mat-header-cell *matHeaderCellDef mat-sort-header class="col-num">Stat. Value (€)</mat-header-cell>
+            <mat-cell *matCellDef="let row" class="col-num">{{ row.statisticalValueEur | number:'1.2-2' }}</mat-cell>
+          </ng-container>
+
+          <!-- Mode of Transport -->
+          <ng-container matColumnDef="modeOfTransport">
+            <mat-header-cell *matHeaderCellDef>Transport</mat-header-cell>
+            <mat-cell *matCellDef="let row">{{ transportLabel(row.modeOfTransport) }}</mat-cell>
+          </ng-container>
+
+          <!-- NOTc -->
+          <ng-container matColumnDef="notc">
+            <mat-header-cell *matHeaderCellDef>NOTc</mat-header-cell>
+            <mat-cell *matCellDef="let row">{{ row.natureOfTransactionCode }}</mat-cell>
+          </ng-container>
+
+          <!-- Delivery Terms -->
+          <ng-container matColumnDef="deliveryTerms">
+            <mat-header-cell *matHeaderCellDef>Terms</mat-header-cell>
+            <mat-cell *matCellDef="let row">{{ row.deliveryTerms }}</mat-cell>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions" stickyEnd>
+            <mat-header-cell *matHeaderCellDef></mat-header-cell>
+            <mat-cell *matCellDef="let row">
+              <button mat-icon-button color="primary" (click)="openEdit(row)" matTooltip="Edit transaction">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </mat-cell>
+          </ng-container>
+
+          <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
+          <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell no-data-cell" [attr.colspan]="displayedColumns.length">
+              @if (!loading) { No transactions match the current filters. }
+            </td>
+          </tr>
+
+        </mat-table>
+      </div>
+
+      <mat-paginator
+        [pageSize]="20"
+        [pageSizeOptions]="[20, 50, 60]"
+        showFirstLastButtons>
+      </mat-paginator>
+
+    </div>
+  </mat-sidenav-content>
+
+  <!-- ── Edit panel sidenav ─────────────────────────────────────────────── -->
+  <mat-sidenav
+    #editSidenav
+    position="end"
+    mode="over"
+    [style.width.px]="400">
+    @if (selectedTransaction) {
+      <app-edit-panel
+        [transaction]="selectedTransaction"
+        [countries]="countries"
+        (saved)="onTransactionSaved($event)"
+        (cancelled)="onEditCancelled()">
+      </app-edit-panel>
+    }
+  </mat-sidenav>
+
+</mat-sidenav-container>

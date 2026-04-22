@@ -1,0 +1,106 @@
+:host {
+  display: block;
+}
+
+.page-sidenav-container {
+  // Fill the main-content area (toolbar is 64 px; padding is 24 px top + 24 px bottom)
+  min-height: calc(100vh - 64px - 48px);
+  // Negative margin cancels the parent's padding so the sidenav reaches the edges
+  margin: -24px;
+}
+
+// ── Filter bar ─────────────────────────────────────────────────────────────────
+
+.filter-card {
+  border-radius: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  margin-bottom: 0;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-field {
+  min-width: 160px;
+}
+
+.flow-toggle {
+  height: 40px;
+}
+
+.count-label {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+// ── Table wrapper ──────────────────────────────────────────────────────────────
+
+.table-wrapper {
+  position: relative;
+  background: #ffffff;
+}
+
+.table-wrapper.is-loading {
+  min-height: 200px;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: 10;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.transactions-table {
+  width: 100%;
+  min-width: 1100px;
+}
+
+// Sticky header background
+.mat-mdc-header-row {
+  background: #f5f5f5;
+}
+
+// Alternating row background
+.mat-mdc-row:nth-child(even) {
+  background-color: #fafafa;
+}
+
+// Right-aligned numeric columns
+.col-num {
+  justify-content: flex-end !important;
+  text-align: right;
+  padding-right: 16px !important;
+}
+
+// Sticky actions column
+.mat-column-actions {
+  min-width: 56px;
+  max-width: 56px;
+  background: inherit;
+}
+
+// No-data row
+.no-data-cell {
+  text-align: center;
+  padding: 32px !important;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 14px;
+}
+
+.part-code {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.7);
+}
