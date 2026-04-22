@@ -116,7 +116,7 @@ export class TransactionsComponent implements OnInit, AfterViewInit {
         case 'legalEntity': return item.legalEntity.name;
         case 'counterpartCountry': return item.counterpartCountryName;
         case 'part': return item.part.name;
-        default: return (item as Record<string, unknown>)[property] as string | number;
+        default: return (item as unknown as Record<string, unknown>)[property] as string | number;
       }
     };
   }
