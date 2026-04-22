@@ -24,7 +24,7 @@ public class Part {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "cn8_code", length = 8, nullable = false)
+    @Column(name = "cn8_code", columnDefinition = "bpchar(8)", nullable = false)
     private String cn8Code;
 
     @Column(name = "supplementary_unit", length = 10)

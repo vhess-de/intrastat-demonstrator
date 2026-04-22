@@ -19,7 +19,7 @@ public class LegalEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "country_code", length = 2, nullable = false)
+    @Column(name = "country_code", columnDefinition = "bpchar(2)", nullable = false)
     private String countryCode;
 
     @Column(name = "vat_number")

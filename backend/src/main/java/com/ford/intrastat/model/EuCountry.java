@@ -13,7 +13,7 @@ import lombok.*;
 public class EuCountry {
 
     @Id
-    @Column(length = 2)
+    @Column(columnDefinition = "bpchar(2)")
     private String code;
 
     @Column(nullable = false)
