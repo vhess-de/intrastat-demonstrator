@@ -167,17 +167,331 @@ FILES CREATED (11 total):
 
 
 ═══════════════════════════════════════════════════════════════
-EPIC 3: Transaction Management API   — NEXT
+EPIC 3: Transaction Management API  ✓ COMPLETED
 ═══════════════════════════════════════════════════════════════
 
-═══════════════════════════════════════════════════════════════
-EPIC 4: Intrastat Report API         — PENDING
-═══════════════════════════════════════════════════════════════
+US-07 — List Transactions
+  ✓ GET /api/transactions with query params:
+      period (YYYY-MM), flowType (ARRIVAL|DISPATCH),
+      legalEntityId (Long), counterpartCountry (ISO-2),
+      page (default 0), size (default 50)
+  ✓ JPA Specification (TransactionSpec) with JOIN FETCH for
+      legalEntity, counterpartCountry, part — avoids N+1
+  ✓ COUNT query excludes JOIN FETCH (resultType check)
+  ✓ Response: PagedResponse<TransactionDto> with
+      content, totalElements, totalPages, page, size
+  ✓ Each TransactionDto includes nested legalEntity
+      (id, name, countryCode) and part (id, partCode, name, cn8Code)
+
+US-08 — Update Transaction (Partial Edit)
+  ✓ PATCH /api/transactions/{id}
+  ✓ Editable fields: quantity, statisticalValueEur, invoiceValueEur,
+      counterpartCountryCode, modeOfTransport,
+      natureOfTransactionCode, deliveryTerms
+  ✓ Bean Validation (@Positive, @DecimalMin, @Min/@Max) for
+      numeric fields — only triggers when field is non-null
+  ✓ Business validation in service:
+      counterpartCountryCode — must exist in eu_countries
+        where active_member = true → HTTP 422 if invalid
+      deliveryTerms — must be one of EXW FCA CPT CIP DAP
+        DDP FAS FOB CFR CIF → HTTP 422 if invalid
+  ✓ netMassKg recalculated as quantity × part.unitMassKg
+      when quantity changes
+  ✓ updated_at set via @PreUpdate on Transaction entity
+  ✓ Returns full TransactionDto on success (HTTP 200)
+  ✓ HTTP 404 for non-existent transaction ID
+  ✓ HTTP 422 with { "errors": [{ "field", "message" }] } on error
+
+US-09 — Get Single Transaction
+  ✓ GET /api/transactions/{id}
+  ✓ Returns full TransactionDto including nested legalEntity + part
+  ✓ HTTP 404 if not found
+
+US-10 — List Reference Data
+  ✓ GET /api/legal-entities → all active entities (id, name, countryCode)
+  ✓ GET /api/countries     → active EU member states (code, name),
+                              sorted by name
+  ✓ GET /api/parts         → all 20 parts (id, partCode, name, cn8Code),
+                              sorted by partCode
+  ✓ All return HTTP 200 with plain JSON array
+
+Exception Handling
+  ✓ GlobalExceptionHandler (@RestControllerAdvice):
+      ResourceNotFoundException     → HTTP 404  { "error": "..." }
+      MethodArgumentNotValidException → HTTP 422 ValidationErrorResponse
+      BusinessValidationException   → HTTP 422 ValidationErrorResponse
+
+DTOs (package: com.ford.intrastat.dto)
+  ✓ TransactionDto          — full transaction response with nested DTOs;
+                               period serialised as "YYYY-MM"
+  ✓ TransactionPatchRequest — optional-field PATCH body with Bean Validation
+  ✓ PagedResponse<T>        — generic paginated wrapper
+  ✓ LegalEntitySummaryDto   — nested in TransactionDto (id, name, countryCode)
+  ✓ PartSummaryDto          — nested in TransactionDto (id, partCode, name, cn8Code)
+  ✓ LegalEntityDto          — for /api/legal-entities
+  ✓ CountryDto              — for /api/countries
+  ✓ PartDto                 — for /api/parts
+  ✓ ValidationErrorResponse — { errors: [{ field, message }] }
+
+Exceptions (package: com.ford.intrastat.exception)
+  ✓ ResourceNotFoundException    — maps to HTTP 404
+  ✓ BusinessValidationException  — maps to HTTP 422
+
+Specification (package: com.ford.intrastat.spec)
+  ✓ TransactionSpec.withFilters() — dynamic Specification with JOIN FETCH
+
+Services (package: com.ford.intrastat.service)
+  ✓ TransactionService   — list(), findById(), patch()
+  ✓ ReferenceDataService — getLegalEntities(), getCountries(), getParts()
+
+Controllers (package: com.ford.intrastat.controller)
+  ✓ TransactionController    — GET /api/transactions,
+                                GET /api/transactions/{id},
+                                PATCH /api/transactions/{id}
+  ✓ ReferenceDataController  — GET /api/legal-entities,
+                                GET /api/countries,
+                                GET /api/parts
+
+FILES CREATED (17 total):
+  backend/src/main/java/com/ford/intrastat/dto/TransactionDto.java
+  backend/src/main/java/com/ford/intrastat/dto/TransactionPatchRequest.java
+  backend/src/main/java/com/ford/intrastat/dto/PagedResponse.java
+  backend/src/main/java/com/ford/intrastat/dto/LegalEntitySummaryDto.java
+  backend/src/main/java/com/ford/intrastat/dto/PartSummaryDto.java
+  backend/src/main/java/com/ford/intrastat/dto/LegalEntityDto.java
+  backend/src/main/java/com/ford/intrastat/dto/CountryDto.java
+  backend/src/main/java/com/ford/intrastat/dto/PartDto.java
+  backend/src/main/java/com/ford/intrastat/dto/ValidationErrorResponse.java
+  backend/src/main/java/com/ford/intrastat/exception/ResourceNotFoundException.java
+  backend/src/main/java/com/ford/intrastat/exception/BusinessValidationException.java
+  backend/src/main/java/com/ford/intrastat/exception/GlobalExceptionHandler.java
+  backend/src/main/java/com/ford/intrastat/spec/TransactionSpec.java
+  backend/src/main/java/com/ford/intrastat/service/TransactionService.java
+  backend/src/main/java/com/ford/intrastat/service/ReferenceDataService.java
+  backend/src/main/java/com/ford/intrastat/controller/TransactionController.java
+  backend/src/main/java/com/ford/intrastat/controller/ReferenceDataController.java
+
 
 ═══════════════════════════════════════════════════════════════
-EPIC 5: Angular Frontend — Transaction Table & Edit  — PENDING
+EPIC 4: Intrastat Report API  ✓ COMPLETED
 ═══════════════════════════════════════════════════════════════
 
+US-11 — Aggregated Intrastat Report
+  ✓ GET /api/report with query params:
+      period (YYYY-MM, required), legalEntityId (optional),
+      flowType (ARRIVAL|DISPATCH, optional)
+  ✓ Reuses TransactionSpec.withFilters() to load all matching
+      transactions (no pagination — max 60 records)
+  ✓ Java stream grouping by:
+      (legalEntityId, flowType, counterpartCountryCode, cn8Code,
+       modeOfTransport, natureOfTransactionCode, deliveryTerms)
+      — private GroupKey record used as map key
+  ✓ Lines sorted: flowType ASC, totalStatisticalValueEur DESC
+  ✓ modeOfTransportLabel mapped:
+      1=Sea, 3=Road, 4=Air, 5=Post,
+      7=Fixed installations, 9=Own propulsion
+  ✓ summary totals: totalLines, totalStatisticalValueEur,
+      totalNetMassKg, totalQuantity, arrivalLines, dispatchLines,
+      arrivalValueEur, dispatchValueEur
+  ✓ If no transactions match: empty lines array + zeroed summary
+  ✓ generatedAt as Instant (ISO 8601 / Z suffix)
+
+US-12 — Report Period Summary
+  ✓ GET /api/report/periods → ["2025-03","2025-02","2025-01"]
+  ✓ Delegates to TransactionRepository.findDistinctPeriods()
+      (native query already in place from Epic 2)
+
+Configuration change
+  ✓ application.properties: added
+      spring.jackson.serialization.write-dates-as-timestamps=false
+      so Instant serialises as ISO 8601 string with Z suffix
+
+DTOs (package: com.ford.intrastat.dto)
+  ✓ ReportResponse   — { period, generatedAt, summary, lines }
+  ✓ ReportSummaryDto — aggregated totals + arrival/dispatch split;
+                        ReportSummaryDto.empty() for no-data case
+  ✓ ReportLineDto    — one aggregated report line with all fields
+                        including modeOfTransportLabel and
+                        transactionCount
+
+Services (package: com.ford.intrastat.service)
+  ✓ ReportService — getReport(), getPeriods()
+
+Controllers (package: com.ford.intrastat.controller)
+  ✓ ReportController — GET /api/report,
+                        GET /api/report/periods
+
+FILES CREATED (6 total):
+  backend/src/main/java/com/ford/intrastat/dto/ReportResponse.java
+  backend/src/main/java/com/ford/intrastat/dto/ReportSummaryDto.java
+  backend/src/main/java/com/ford/intrastat/dto/ReportLineDto.java
+  backend/src/main/java/com/ford/intrastat/service/ReportService.java
+  backend/src/main/java/com/ford/intrastat/controller/ReportController.java
+  (backend/src/main/resources/application.properties updated)
+
+
 ═══════════════════════════════════════════════════════════════
-EPIC 6: Angular Frontend — Intrastat Report View     — PENDING
+EPIC 5: Angular Frontend — Transaction Table & Edit  ✓ COMPLETED
+═══════════════════════════════════════════════════════════════
+
+US-13 — Transaction List Table
+  ✓ Page: /transactions
+  ✓ MatTableDataSource with MatSort + MatPaginator (20 rows/page)
+  ✓ All 60 rows loaded at startup via GET /api/transactions?page=0&size=100
+  ✓ Default sort: period DESC, statisticalValueEur DESC (pre-sorted on load)
+  ✓ sortingDataAccessor maps nested fields (legalEntity, counterpartCountry, part)
+  ✓ Columns: Period, Legal Entity (name + flag emoji), Flow (badge),
+      Counterpart (name + flag emoji), Part (code + name), CN8 Code,
+      Qty, Net Mass (kg), Stat. Value (€), Transport, NOTc, Terms, Actions
+  ✓ Numeric columns (Qty, Net Mass, Stat. Value) right-aligned
+  ✓ ARRIVAL/DISPATCH badges use global .badge-arrival / .badge-dispatch styles
+  ✓ Sticky header row; sticky actions column (end)
+  ✓ Loading overlay (spinner) while data is in flight
+  ✓ "No transactions match filters" row via *matNoDataRow
+
+US-14 — Filter Bar
+  ✓ Period <mat-select> from GET /api/report/periods; "All periods" default
+  ✓ Flow Type <mat-button-toggle-group>: All | Arrivals | Dispatches
+  ✓ Legal Entity <mat-select> from GET /api/legal-entities; "All entities"
+  ✓ Counterpart Country <mat-select> populated from distinct countries
+      in the loaded data (not from /api/countries), sorted by name
+  ✓ All filters apply immediately via applyFilters()
+  ✓ Active filter count badge on "Clear Filters" button (hidden when 0)
+  ✓ "Showing X of 60 transactions" count label
+  ✓ clearFilters() resets all filters and jumps to first page
+
+US-15 — Inline Edit (Side Panel)
+  ✓ Edit button opens MatSidenav (400 px, position=end, mode=over)
+  ✓ Read-only context: Period, Legal Entity, Flow Type, Part, CN8 Code
+  ✓ Editable fields with validation:
+      Quantity           — number input, min(1)
+      Statistical Value  — number input, min(0.01)
+      Invoice Value      — number input, min(0.01)
+      Counterpart Country — mat-select (EU countries from /api/countries)
+      Mode of Transport  — mat-select (6 codes with labels)
+      NOTc               — number input, min(11)/max(99), hint "11–99"
+      Delivery Terms     — mat-select (10 Incoterms codes)
+  ✓ Estimated net mass shown below Quantity field:
+      derived as (transaction.netMassKg / transaction.quantity) × newQty
+  ✓ Save: calls PATCH /api/transactions/{id}; on success closes panel,
+      shows MatSnackBar "Transaction updated", updates row in table
+  ✓ Save button disabled while request in flight; spinner in button
+  ✓ Cancel: if form dirty → MatDialog "Discard changes?" confirmation;
+      if clean → emit cancelled immediately
+  ✓ Server-side 422 errors applied as setErrors({ serverError: msg })
+      on individual form controls and shown in mat-error
+  ✓ Ford-blue panel header with white text and close icon
+
+TypeScript Models (src/app/core/models/)
+  ✓ transaction.model.ts  — Transaction, LegalEntitySummary, PartSummary,
+                             PagedResponse<T>, TransactionPatch,
+                             ValidationErrorResponse
+  ✓ reference-data.model.ts — LegalEntity, Country, Part
+
+Angular Services (src/app/core/services/)
+  ✓ transaction-api.service.ts    — listAll(), patch()
+  ✓ reference-data-api.service.ts — getLegalEntities(), getCountries(),
+                                     getParts(), getPeriods()
+
+Components (src/app/features/transactions/)
+  ✓ TransactionsComponent         — table + filter bar + sidenav host
+  ✓ EditPanelComponent            — reactive form, validation, PATCH call
+  ✓ ConfirmDialogComponent        — inline dialog (defined in edit-panel file)
+
+FILES CREATED (10 total):
+  frontend/src/app/core/models/transaction.model.ts
+  frontend/src/app/core/models/reference-data.model.ts
+  frontend/src/app/core/services/transaction-api.service.ts
+  frontend/src/app/core/services/reference-data-api.service.ts
+  frontend/src/app/features/transactions/transactions.component.ts  (replaced)
+  frontend/src/app/features/transactions/transactions.component.html
+  frontend/src/app/features/transactions/transactions.component.scss
+  frontend/src/app/features/transactions/edit-panel/edit-panel.component.ts
+  frontend/src/app/features/transactions/edit-panel/edit-panel.component.html
+  frontend/src/app/features/transactions/edit-panel/edit-panel.component.scss
+
+
+═══════════════════════════════════════════════════════════════
+EPIC 6: Angular Frontend — Intrastat Report View  ✓ COMPLETED
+═══════════════════════════════════════════════════════════════
+
+US-16 — Report Page & Period Selector
+  ✓ Page: /report
+  ✓ forkJoin loads periods + legal entities on init
+  ✓ Period <mat-select> defaults to most-recent period (periods[0])
+  ✓ Optional entity filter: <mat-select> "All entities" default
+  ✓ Flow type toggle: All | Arrivals | Dispatches
+  ✓ Any filter change immediately calls loadReport() → GET /api/report
+  ✓ "Clear Filters" button (visible only when filters active) resets
+      selectedFlow + selectedEntityId and reloads
+  ✓ Initial loading: centered spinner while periods/entities load
+  ✓ Skeleton rows (shimmer animation) inside the table while report
+      API call is in flight (5 placeholder rows via rowType='SKELETON')
+
+US-17 — Report Summary Cards
+  ✓ Six mat-cards in responsive CSS grid:
+      6 columns desktop → 3 tablet → 2 mobile
+  ✓ Cards: Total Report Lines, Total Statistical Value, Total Net Mass,
+      Total Quantity, Arrivals Value (green header), Dispatches Value (blue header)
+  ✓ Ford blue (#003078) header on all cards; green/blue variants for
+      arrival/dispatch cards
+  ✓ Sub-label showing line count on arrival/dispatch cards
+  ✓ Values update on every report reload
+
+US-18 — Report Lines Table
+  ✓ Angular Material table, not paginated
+  ✓ Columns: Legal Entity, Flow (badge), Counterpart (flag + name),
+      CN8 Code, Part Description, Qty, Net Mass (kg), Stat. Value (€),
+      Invoice Value (€), Transport, NOTc, Terms, Txn Count
+  ✓ Numeric columns (Qty, Net Mass, Stat. Value, Invoice Value,
+      Txn Count) right-aligned
+  ✓ Txn Count cell has matTooltip "Based on N raw transactions"
+  ✓ Rows grouped by flow type — virtual GroupHeaderRow objects
+      injected before each group:
+        ARRIVALS group: green (#e8f5e9) sticky header row
+        DISPATCHES group: blue (#e3f2fd) sticky header row
+      Each group header shows: flow label, line count,
+        transaction count, subtotal stat value
+  ✓ Grand total footer row (bold, border-top):
+      Qty, Net Mass, Stat. Value (from summary), Invoice Value +
+      Txn Count (computed from lines array)
+  ✓ Footer hidden when no data (display:none binding)
+  ✓ Sticky mat-header-row (always visible on scroll)
+  ✓ Alternating row stripes (nth-child(even) → #fafafa)
+  ✓ Table is read-only (no edit actions)
+
+US-19 — No-Data State
+  ✓ When report.lines is empty and not loading: centred
+      search_off icon + "No transactions found for the selected
+      filters." text + "Clear Filters" button
+  ✓ Clear Filters resets selectedFlow and selectedEntityId to All
+      and reloads the report
+
+Table row type pattern
+  ✓ Union type TableRow = ReportLine | GroupHeaderRow | SkeletonRow
+  ✓ *matRowDef uses three `when` predicates:
+      isDataRow    — !('rowType' in row)       → dataColumns
+      isGroupHeader — rowType === 'GROUP_HEADER' → ['groupRow']
+      isSkeleton   — rowType === 'SKELETON'     → ['skeletonRow']
+  ✓ groupRow virtual column: single cell with flex:1 / max-width:100%
+      spans the full row width via CSS
+  ✓ skeletonRow virtual column: single cell with shimmer bar
+
+TypeScript Models (src/app/core/models/)
+  ✓ report.model.ts — ReportSummary, ReportLine, ReportResponse,
+                       GroupHeaderRow, SkeletonRow, TableRow union
+
+Angular Services (src/app/core/services/)
+  ✓ report-api.service.ts — getReport(), getPeriods()
+
+FILES CREATED (5 total):
+  frontend/src/app/core/models/report.model.ts
+  frontend/src/app/core/services/report-api.service.ts
+  frontend/src/app/features/report/report.component.ts  (replaced)
+  frontend/src/app/features/report/report.component.html
+  frontend/src/app/features/report/report.component.scss
+
+
+═══════════════════════════════════════════════════════════════
+ALL 6 EPICS COMPLETE
 ═══════════════════════════════════════════════════════════════
