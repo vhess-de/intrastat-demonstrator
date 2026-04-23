@@ -156,7 +156,7 @@
     mat-raised-button
     color="primary"
     (click)="save()"
-    [disabled]="saving">
+    [disabled]="saving || form.invalid">
     @if (saving) {
       <mat-spinner diameter="18" class="btn-spinner"></mat-spinner>
     } @else {

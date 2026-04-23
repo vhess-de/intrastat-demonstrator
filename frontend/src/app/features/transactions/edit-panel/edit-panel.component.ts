@@ -24,6 +24,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
+import { MatSnackBar } from '@angular/material/snack-bar';
+
 import { Transaction, TransactionPatch } from '../../../core/models/transaction.model';
 import { Country } from '../../../core/models/reference-data.model';
 import { TransactionApiService } from '../../../core/services/transaction-api.service';
@@ -95,6 +97,7 @@ export class EditPanelComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(TransactionApiService);
   private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   form = this.fb.group({
     quantity: [0, [Validators.required, Validators.min(1)]],
@@ -158,6 +161,12 @@ export class EditPanelComponent implements OnChanges {
               ctrl.setErrors({ serverError: e.message });
             }
           }
+        } else {
+          this.snackBar.open(
+            `Save failed: ${err.status} ${err.statusText || 'Unknown error'}`,
+            'Close',
+            { duration: 5000 },
+          );
         }
       },
     });
